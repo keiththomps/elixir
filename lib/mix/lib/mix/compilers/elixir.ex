@@ -40,6 +40,9 @@ defmodule Mix.Compilers.Elixir do
     prev_paths =
       for source(source: source) <- all_sources, into: MapSet.new(), do: source
 
+    IO.puts("[DEBUG] Manifest: #{inspect(manifest)}")
+    IO.puts("[DEBUG] Manifest Last Modified: #{inspect(modified)}")
+
     removed =
       prev_paths
       |> MapSet.difference(all_paths)
@@ -59,6 +62,12 @@ defmodule Mix.Compilers.Elixir do
           |> MapSet.difference(prev_paths)
           |> MapSet.to_list
 
+        sources = for source(source: source) <- all_sources,
+        {last_mtime, _last_size} = Map.fetch!(sources_stats, source),
+        do: [source, last_mtime]
+
+        IO.puts("[DEBUG] Sources: #{inspect(sources)}")
+
         # Plus the sources that have changed in disk
         for(source(source: source, external: external, size: size) <- all_sources,
             {last_mtime, last_size} = Map.fetch!(sources_stats, source),
@@ -75,6 +84,8 @@ defmodule Mix.Compilers.Elixir do
         removed ++ changed,
         stale_local_deps(manifest, modified)
       )
+
+    IO.puts("[DEBUG] Changed sources: #{inspect(changed)}")
 
     stale   = changed -- removed
     sources = update_stale_sources(all_sources, removed, changed)
